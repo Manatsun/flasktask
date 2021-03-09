@@ -1,5 +1,6 @@
 # splite3をimportする
 import sqlite3
+import datetime
 # flaskをimportしてflaskを使えるようにする
 from flask import Flask , render_template , request , redirect , session
 # appにFlaskを定義して使えるようにしています。Flask クラスのインスタンスを作って、 app という変数に代入しています。
@@ -86,10 +87,10 @@ def bbs():
         c.execute("select name from user where id = ?", (user_id,))
         # fetchoneはタプル型
         user_info = c.fetchone()
-        c.execute("select id,comment from bbs where userid = ? order by id", (user_id,))
+        c.execute("select id,comment,NweDye from bbs where userid = ? AND DleDye is NULL order by id", (user_id,))
         comment_list = []
         for row in c.fetchall():
-            comment_list.append({"id": row[0], "comment": row[1]})
+            comment_list.append({"id": row[0], "comment": row[1], "NweDye": row[2]})
 
         c.close()
         return render_template('bbs.html' , user_info = user_info , comment_list = comment_list)
@@ -104,8 +105,10 @@ def add():
     comment = request.form.get("comment")
     conn = sqlite3.connect('service.db')
     c = conn.cursor()
+    NweDyea=datetime.datetime.now()
+    NweDye=NweDyea.strftime('%Y年%m月%d日 %H:%M')
     # DBにデータを追加する
-    c.execute("insert into bbs values(null,?,?)", (user_id, comment))
+    c.execute("insert into bbs values(null,?,?,?,null)", (user_id, comment,NweDye))
     conn.commit()
     conn.close()
     return redirect('/bbs')
@@ -162,9 +165,11 @@ def del_task():
     # クッキーから user_id を取得
     id = request.form.get("comment_id")
     id = int(id)
+    DleDyea=datetime.datetime.now()
+    DleDye=DleDyea.strftime('%Y年%m月%d日 %H:%M')
     conn = sqlite3.connect("service.db")
     c = conn.cursor()
-    c.execute("delete from bbs where id = ?", (id,))
+    c.execute("update bbs set DleDye = ? where id = ?", (DleDye,id))
     conn.commit()
     c.close()
     return redirect("/bbs")
@@ -181,6 +186,7 @@ def notfound404(code):
 
 
 # __name__ というのは、自動的に定義される変数で、現在のファイル(モジュール)名が入ります。 ファイルをスクリプトとして直接実行した場合、 __name__ は __main__ になります。
-if __name__ == "__main__":
+if __name__=='__main__':
+    app.run(debug=True)
     # Flask が持っている開発用サーバーを、実行します。
-    app.run()
+    # app.run()
