@@ -1,14 +1,57 @@
 # splite3をimportする
+import os
+
+# 画像のダウンロード
+from werkzeug.utils import secure_filename
+
 import sqlite3
 import datetime
 # flaskをimportしてflaskを使えるようにする
-from flask import Flask , render_template , request , redirect , session
+from flask import Flask , render_template , request , redirect , session ,send_from_directory ,url_for
 # appにFlaskを定義して使えるようにしています。Flask クラスのインスタンスを作って、 app という変数に代入しています。
 app = Flask(__name__)
 
 # Flask では標準で Flask.secret_key を設定すると、sessionを使うことができます。この時、Flask では session の内容を署名付きで Cookie に保存します。
 app.secret_key = 'sunabakoza'
+# 課題４用
+UPLOAD_FOLDER = './static/img'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'gif'])
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+def allwed_file(filename):
+    # .があるかどうかのチェックと、拡張子の確認
+    # OKなら１、だめなら0
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# ファイルを受け取る方法の指定
+@app.route('/img')
+def imgUp():
+    return render_template('img.html')
+
+@app.route('/img', methods=['GET', 'POST'])
+def uploads_file():
+    # リクエストがポストかどうかの判別
+    if request.method == 'POST':
+        # ファイルがなかった場合の処理
+        if 'file' not in request.files:
+            flash('ファイルがありません')
+            return redirect('/img')
+        # データの取り出し
+        file = request.files['file']
+        # ファイル名がなかった時の処理
+        if file.filename == '':
+            flash('ファイルがありません')
+            return redirect('/img')
+        # ファイルのチェック
+        if file and allwed_file(file.filename):
+            # 危険な文字を削除（サニタイズ処理）
+            filename = secure_filename(file.filename)
+            # ファイルの保存
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # アップロード後のページに転送
+            return redirect("/img")
+    return 
+# 課題4用ここまで
 @app.route('/')
 def index():
     return render_template('index.html')
